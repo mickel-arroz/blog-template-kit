@@ -1,103 +1,159 @@
-import Image from 'next/image';
+// File: app/page.tsx
+export const dynamic = 'force-dynamic';
+import { revalidatePath } from 'next/cache';
+import { createPost, listPosts } from '@/services/posts/repository';
+import { CreatePostSchema } from '@/domain/shared/schemas';
 
-export default function Home() {
+// Server Action para crear un Post de prueba usando el esquema compartido
+async function create(formData: FormData) {
+  'use server';
+  const raw = {
+    slug: String(formData.get('slug') || ''),
+    title: String(formData.get('title') || ''),
+    content: String(formData.get('content') || ''),
+    excerpt: String(formData.get('excerpt') || ''),
+    tags: (String(formData.get('tags') || '') || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean),
+    status: (formData.get('status') || 'draft') as string,
+  };
+
+  const parsed = CreatePostSchema.safeParse(raw);
+  if (!parsed.success) {
+    // En un caso real devolverías errores serializables o usas formState
+    console.error(parsed.error.flatten());
+    return;
+  }
+  try {
+    await createPost(parsed.data);
+    revalidatePath('/');
+  } catch (e) {
+    console.error('Error creando post', e);
+  }
+}
+
+export default async function Page() {
+  // Lista inicial de posts (limit 10)
+  const { items } = await listPosts({ limit: 10 });
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{' '}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <div className="max-w-3xl mx-auto p-6 space-y-8">
+      <section>
+        <h1 className="text-2xl font-bold mb-4">Crear Post (demo)</h1>
+        <form action={create} className="space-y-4">
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="slug">
+              Slug
+            </label>
+            <input
+              id="slug"
+              name="slug"
+              required
+              className="border rounded px-3 py-2 text-sm"
+              placeholder="ej: mi-primer-post"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="title">
+              Título
+            </label>
+            <input
+              id="title"
+              name="title"
+              required
+              className="border rounded px-3 py-2 text-sm"
+              placeholder="Título del post"
+            />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="excerpt">
+              Resumen
+            </label>
+            <input
+              id="excerpt"
+              name="excerpt"
+              className="border rounded px-3 py-2 text-sm"
+              placeholder="Opcional breve descripción"
+            />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="content">
+              Contenido
+            </label>
+            <textarea
+              id="content"
+              name="content"
+              required
+              className="border rounded px-3 py-2 text-sm min-h-32"
+              placeholder="Markdown o texto"
+            />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="tags">
+              Tags (comma separated)
+            </label>
+            <input
+              id="tags"
+              name="tags"
+              className="border rounded px-3 py-2 text-sm"
+              placeholder="nextjs,typescript"
+            />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="status">
+              Estado
+            </label>
+            <select
+              id="status"
+              name="status"
+              className="border rounded px-3 py-2 text-sm"
+              defaultValue="draft"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="bg-black text-white dark:bg-white dark:text-black text-sm px-4 py-2 rounded hover:opacity-90"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            Crear
+          </button>
+        </form>
+      </section>
+      <section>
+        <h2 className="text-xl font-semibold mb-3">Posts recientes</h2>
+        <ul className="space-y-3">
+          {items.length === 0 && (
+            <li className="text-sm text-neutral-500">No hay posts aún.</li>
+          )}
+          {items.map((p) => (
+            <li key={p.id} className="border rounded p-3">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="font-medium text-sm">{p.title}</h3>
+                <span className="text-[10px] uppercase tracking-wide bg-neutral-200 dark:bg-neutral-700 px-2 py-0.5 rounded">
+                  {p.status}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                {p.excerpt || '—'}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {p.tags.map((t) => (
+                  <span
+                    key={t}
+                    className="text-[10px] bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

@@ -13,6 +13,7 @@
     "prisma:format": "prisma format"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
     "@prisma/client": "^5.22.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
