@@ -1,5 +1,6 @@
 // File: app/page.tsx
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 import { revalidatePath } from 'next/cache';
 import { createPost, listPosts } from '@/services/posts/repository';
 import { CreatePostSchema } from '@/domain/shared/schemas';
