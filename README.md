@@ -34,3 +34,31 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+---
+
+## Vercel Postgres + Prisma Setup
+
+1. En el panel de Vercel, crea una base Postgres (Storage → Create Database).
+2. Copia el snippet de variables `.env` que Vercel ofrece y pégalo en tu `.env.local` (no se commitea). O usa el template `.env.example` de este repo.
+3. Asegura que tengas al menos:
+   - `POSTGRES_PRISMA_URL`
+   - `POSTGRES_URL_NON_POOLING`
+4. Genera el cliente Prisma y crea migración inicial:
+
+```bash
+npm run prisma:migrate -- --name init
+npm run prisma:generate
+```
+
+5. (Opcional) Abre Prisma Studio:
+
+```bash
+npm run prisma:studio
+```
+
+### Notas
+
+- En producción (Vercel) no necesitas definir `directUrl` manualmente; Prisma lo leerá de `POSTGRES_URL_NON_POOLING`.
+- Usa `POSTGRES_PRISMA_URL` siempre para el datasource principal del pool.
+- Evita conexiones sin pool desde handlers serverless (usa la URL pooling).

@@ -1,0 +1,56 @@
+// Prisma schema for blog-template-kit
+// Runtime: PostgreSQL (Vercel Postgres / Neon)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Para despliegue en Vercel: POSTGRES_PRISMA_URL (pooling) se inyecta automáticamente.
+  // Para entorno local, copia el valor desde el panel de Vercel y pégalo en .env.local
+  url       = env("POSTGRES_PRISMA_URL")
+  // directUrl: conexión sin pool para migrate/studio si se desea (Vercel provee POSTGRES_URL_NON_POOLING)
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// Tables
+model Post {
+  id          String     @id @default(uuid())
+  slug        String     @unique
+  title       String
+  excerpt     String?    @db.Text
+  content     String     @db.Text
+  coverImage  String?    @db.Text
+  tags        String[]
+  status      PostStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Singleton settings row (id = 'singleton')
+model Settings {
+  id                   String    @id @default("singleton")
+  siteName             String
+  siteDescription      String?   @db.Text
+  logoUrl              String?   @db.Text
+  faviconUrl           String?   @db.Text
+  theme                ThemeMode @default(SYSTEM)
+  homepageHeroTitle    String?   @db.Text
+  homepageHeroSubtitle String?   @db.Text
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+enum ThemeMode {
+  LIGHT
+  DARK
+  SYSTEM
+}
