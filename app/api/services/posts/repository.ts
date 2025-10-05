@@ -63,6 +63,12 @@ export async function getPostBySlug(slug: string) {
   return mapDbPost(db);
 }
 
+export async function getPostById(id: string) {
+  const db = await prisma.post.findUnique({ where: { id } });
+  if (!db) return null;
+  return mapDbPost(db);
+}
+
 export async function createPost(rawInput: unknown) {
   const input = CreatePostSchema.parse(rawInput);
   // enforce unique slug (prisma unique will also enforce)
@@ -144,7 +150,10 @@ export async function updatePost(rawInput: unknown) {
 
 export async function deletePost(id: string) {
   try {
-    await prisma.post.delete({ where: { id } });
+    await prisma.post.update({
+      where: { id },
+      data: { status: 'DELETED' as PostStatus },
+    });
     return { ok: true } as const;
   } catch (err: unknown) {
     if (isPrismaError(err) && err.code === 'P2025') {

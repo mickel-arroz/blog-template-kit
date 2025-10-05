@@ -4,7 +4,12 @@ import { z } from 'zod';
  * Post domain schema (shared client/server) - normalized structure.
  * Markdown/HTML content is stored in `content` (raw) and MAY be sanitized before render.
  */
-export const PostStatusSchema = z.enum(['draft', 'published', 'archived']);
+export const PostStatusSchema = z.enum([
+  'draft',
+  'published',
+  'archived',
+  'deleted',
+]);
 export type PostStatus = z.infer<typeof PostStatusSchema>;
 
 export const PostIdSchema = z.string().uuid();

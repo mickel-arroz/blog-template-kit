@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition, useState } from 'react';
+import { useTransition, useState, useMemo } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CreatePostSchema } from '@/domain/shared/schemas';
@@ -31,23 +31,50 @@ import { isAxiosError } from 'axios';
 // Importante: usar el tipo de ENTRADA del schema para que coincida con zodResolver
 type FormValues = z.input<typeof CreatePostSchema>;
 
-export function NewPostForm() {
+type PostFormProps = {
+  edit?: boolean;
+  initialValues?: Partial<FormValues> & { id?: string | null };
+};
+
+export function PostForm({ edit = false, initialValues }: PostFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const defaults = useMemo<FormValues>(
+    () => ({
+      slug: (initialValues?.slug as string) ?? '',
+      title: (initialValues?.title as string) ?? '',
+      excerpt: (initialValues?.excerpt as string) ?? '',
+      content: (initialValues?.content as string) ?? '',
+      coverImage:
+        typeof initialValues?.coverImage === 'string'
+          ? initialValues?.coverImage
+          : null,
+      tags: Array.isArray(initialValues?.tags)
+        ? (initialValues?.tags as string[])
+        : [],
+      status: (initialValues?.status as FormValues['status']) ?? 'draft',
+      // Evitar problemas de tipo en cliente: mantener null
+      publishedAt: null,
+    }),
+    [initialValues]
+  );
+
   const form = useForm<FormValues>({
     resolver: zodResolver(CreatePostSchema),
-    defaultValues: {
-      slug: '',
-      title: '',
-      excerpt: '',
-      content: '',
-      coverImage: null,
-      tags: [],
-      status: 'draft',
-      publishedAt: null,
-    },
+    defaultValues: edit
+      ? defaults
+      : {
+          slug: '',
+          title: '',
+          excerpt: '',
+          content: '',
+          coverImage: null,
+          tags: [],
+          status: 'draft',
+          publishedAt: null,
+        },
     mode: 'onSubmit',
   });
 
@@ -55,7 +82,13 @@ export function NewPostForm() {
     setError(null);
     startTransition(async () => {
       try {
-        await axios.post('/api/admin/posts', values);
+        if (edit) {
+          const id = initialValues?.id;
+          if (!id) throw new Error('ID del post no disponible');
+          await axios.put(`/api/admin/posts/${id}`, { id, ...values });
+        } else {
+          await axios.post('/api/admin/posts', values);
+        }
         router.push('/admin/posts');
       } catch (e) {
         const msg = isAxiosError(e)
@@ -191,7 +224,13 @@ export function NewPostForm() {
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
         <Button type="submit" disabled={isPending}>
-          {isPending ? 'Creando...' : 'Crear'}
+          {isPending
+            ? edit
+              ? 'Guardando...'
+              : 'Creando...'
+            : edit
+            ? 'Guardar cambios'
+            : 'Crear'}
         </Button>
       </form>
     </Form>

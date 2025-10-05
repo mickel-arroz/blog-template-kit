@@ -2,6 +2,14 @@
 
 import { type ColumnDef } from '@tanstack/react-table';
 import { type PostStatus } from '@/domain/shared/schemas';
+import EditIcon from '@/components/icons/EditIcon';
+import TrashIcon from '@/components/icons/TrashIcon';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
+import { axios } from '@/lib/http/axios';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 
 export type PostRow = {
   id: string;
@@ -13,6 +21,58 @@ export type PostRow = {
   createdAt?: string | null;
   publishedAt?: string | null;
 };
+
+function ActionsCell({ id, status }: { id: string; status: PostStatus }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const disabled = status === 'deleted';
+
+  const confirmDelete = () => {
+    startTransition(async () => {
+      try {
+        await axios.delete(`/api/admin/posts/${id}`);
+        router.refresh();
+      } catch (e) {
+        console.error('Error eliminando post', e);
+      }
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {disabled ? (
+        <Button variant="ghost" size="icon-sm" aria-label="Editar" disabled>
+          <EditIcon />
+        </Button>
+      ) : (
+        <Button asChild variant="ghost" size="icon-sm" aria-label="Editar">
+          <Link href={`/admin/posts/${id}`}>
+            <EditIcon />
+          </Link>
+        </Button>
+      )}
+
+      <ConfirmationModal
+        onConfirm={confirmDelete}
+        title="Eliminar post"
+        description={`¿Seguro que deseas eliminar este post? Podrás verlo en el listado como "DELETED" y no se podrá editar ni eliminar nuevamente.`}
+        confirmText={isPending ? 'Eliminando...' : 'Eliminar'}
+        cancelText="Cancelar"
+        disabled={disabled || isPending}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Eliminar"
+            disabled={disabled || isPending}
+          >
+            <TrashIcon />
+          </Button>
+        }
+      />
+    </div>
+  );
+}
 
 export const columns: ColumnDef<PostRow>[] = [
   {
@@ -66,6 +126,13 @@ export const columns: ColumnDef<PostRow>[] = [
           ? new Date(row.original.createdAt).toLocaleDateString()
           : '—'}
       </span>
+    ),
+  },
+  {
+    id: 'actions',
+    header: 'Acciones',
+    cell: ({ row }) => (
+      <ActionsCell id={row.original.id} status={row.original.status} />
     ),
   },
 ];

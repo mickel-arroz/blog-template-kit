@@ -33,6 +33,7 @@ enum PostStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+  DELETED
 }
 
 // Singleton settings row (id = 'singleton')
