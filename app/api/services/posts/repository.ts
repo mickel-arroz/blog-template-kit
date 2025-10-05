@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma/client';
+import prisma from '@/app/api/lib/prisma/client';
 import {
   PostSchema,
   CreatePostSchema,
