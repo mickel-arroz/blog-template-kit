@@ -4,7 +4,12 @@ import { z } from 'zod';
  * Post domain schema (shared client/server) - normalized structure.
  * Markdown/HTML content is stored in `content` (raw) and MAY be sanitized before render.
  */
-export const PostStatusSchema = z.enum(['draft', 'published', 'archived']);
+export const PostStatusSchema = z.enum([
+  'draft',
+  'published',
+  'archived',
+  'deleted',
+]);
 export type PostStatus = z.infer<typeof PostStatusSchema>;
 
 export const PostIdSchema = z.string().uuid();
@@ -18,9 +23,17 @@ export const PostBaseSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/i, 'Slug inválido')
     .describe('URL-friendly identifier'),
   title: z.string().min(3).max(180),
-  excerpt: z.string().max(300).optional().or(z.literal('')).default(''),
+  // excerpt puede venir null desde la BD; lo normalizamos a ''
+  excerpt: z
+    .string()
+    .max(300)
+    .nullable()
+    .optional()
+    .transform((v) => v ?? '')
+    .default(''),
   content: z.string().min(1, 'Contenido requerido'),
-  coverImage: z.string().url().optional(),
+  // coverImage opcional y puede almacenarse como null en la BD
+  coverImage: z.string().url().nullable().optional(),
   tags: z.array(z.string().min(1).max(40)).max(25).default([]),
   status: PostStatusSchema.default('draft'),
   publishedAt: z.date().optional().nullable(),

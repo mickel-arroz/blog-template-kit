@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma/client';
+import prisma from '@/app/api/lib/prisma/client';
 import {
   PostSchema,
   CreatePostSchema,
@@ -59,6 +59,12 @@ export async function listPosts(rawQuery: unknown) {
 
 export async function getPostBySlug(slug: string) {
   const db = await prisma.post.findUnique({ where: { slug } });
+  if (!db) return null;
+  return mapDbPost(db);
+}
+
+export async function getPostById(id: string) {
+  const db = await prisma.post.findUnique({ where: { id } });
   if (!db) return null;
   return mapDbPost(db);
 }
@@ -144,7 +150,10 @@ export async function updatePost(rawInput: unknown) {
 
 export async function deletePost(id: string) {
   try {
-    await prisma.post.delete({ where: { id } });
+    await prisma.post.update({
+      where: { id },
+      data: { status: 'DELETED' as PostStatus },
+    });
     return { ok: true } as const;
   } catch (err: unknown) {
     if (isPrismaError(err) && err.code === 'P2025') {
